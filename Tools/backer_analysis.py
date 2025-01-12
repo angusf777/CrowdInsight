@@ -39,12 +39,13 @@ def format_date(timestamp: float) -> str:
     """Format timestamp as dd/mm/yyyy."""
     return datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y')
 
-def analyze_backer_funding(projects: List[Dict]) -> Tuple[List[str], List[float]]:
-    """Calculate average funding per backer for each category."""
+def analyze_backer_funding(projects: List[Dict], category: Optional[str] = None) -> Tuple[List[str], List[float]]:
+    """Calculate average funding per backer for each category or subcategory."""
     funding_data: Dict[str, Dict[str, float]] = {}
     
     for p in projects:
-        cat = p['category'].title()
+        # Use subcategory if a specific category is provided, otherwise use main category
+        cat = p['subcategory'] if category else p['category'].title()
         backers = p['backers_count']
         if backers > 0:  # Only consider projects with backers
             if cat not in funding_data:
@@ -83,9 +84,11 @@ def find_top_funded_projects(projects: List[Dict], category: Optional[str] = Non
     
     return unique_projects
 
-def display_backer_metrics(categories: List[str], averages: List[float]):
+def display_backer_metrics(categories: List[str], averages: List[float], category: Optional[str] = None):
     """Display average funding per backer for each category."""
-    print("\nAverage Funding per Backer by Category:")
+    header = "Average Funding per Backer by "
+    header += "Subcategory" if category else "Category"
+    print(f"\n{header}:")
     for cat, avg in zip(categories, averages):
         print(f"{cat}: ${avg:.2f}")
 
@@ -103,7 +106,7 @@ def display_top_projects(projects: List[Dict]) -> None:
         print(f"   Total Pledged: ${pledged:,.2f}")
         print(f"   Backers: {backers:,}")
         print(f"   Average Pledge: ${avg_pledge:.2f}")
-        print(f"   URL: {project['url']}")
+        print(f"   URL: {project['links']['project']}")
         print()
 
 def analyze_projects(args: argparse.Namespace):
@@ -128,12 +131,12 @@ def analyze_projects(args: argparse.Namespace):
             projects = category_projects
         
         # Calculate average funding per backer
-        categories, averages = analyze_backer_funding(projects)
-        display_backer_metrics(categories, averages)
+        categories, averages = analyze_backer_funding(projects, args.category)
+        display_backer_metrics(categories, averages, args.category)
         
         # Create backer funding visualization
         from plot.backer_funding import create_backer_funding_chart
-        create_backer_funding_chart(categories, averages)
+        create_backer_funding_chart(categories, averages, args.category)
         
         # Find and display top funded projects
         top_projects = find_top_funded_projects(projects, args.category)

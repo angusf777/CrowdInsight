@@ -195,11 +195,22 @@ def calculate_metrics(projects: List[Dict[str, Any]], start_time: int = None, en
         'filtered_projects': filtered_projects  # Add filtered projects to return value
     }
 
-def calculate_percentage_change(recent: float, previous: float) -> float:
+def calculate_percentage_change(current: float, previous: float) -> float:
     """Calculate percentage change between two values."""
     if previous == 0:
-        return float('inf') if recent > 0 else 0
-    return ((recent - previous) / previous) * 100
+        return 100.0 if current > 0 else 0.0  # Cap at 100% growth for new categories
+    return ((current - previous) / previous) * 100
+
+def format_growth(value: float) -> str:
+    """Format growth percentage for display."""
+    if value == float('inf'):
+        return '+∞%'
+    elif value == float('-inf'):
+        return '-∞%'
+    elif value > 0:
+        return f'+{value:.1f}%'
+    else:
+        return f'{value:.1f}%'
 
 def display_category_breakdown(recent_breakdown: List[Dict[str, Any]], previous_breakdown: List[Dict[str, Any]], 
                             sort_by: str, is_subcategory: bool = False, sort_by_growth: bool = True):
@@ -239,7 +250,7 @@ def display_category_breakdown(recent_breakdown: List[Dict[str, Any]], previous_
     
     for cat in sorted_cats:
         print(f"{cat['category'][:19]:<20} {cat['total_projects']:<10} {cat['total_funds']/1e6:,.1f}{'M':<8} "
-              f"{cat['success_rate']:,.1f}%{'':>6} {cat['growth']:+.1f}%")
+              f"{cat['success_rate']:,.1f}%{'':>6} {format_growth(cat['growth']):<10}")
     
     # Create visualization of category growth
     sorted_cat_tuples = [(cat['category'], cat) for cat in sorted_cats]
