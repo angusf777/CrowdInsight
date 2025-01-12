@@ -13,6 +13,9 @@ from pathlib import Path
 from typing import Dict, Any, Tuple, List
 from collections import defaultdict
 from operator import itemgetter
+from plot.trending_cat import create_growth_plot
+from plot.funding_chart import create_funding_chart
+from plot.country_chart import create_country_chart
 
 # Configure logging
 logging.basicConfig(
@@ -49,6 +52,8 @@ def parse_arguments():
                       help='Time period to analyze (default: 30d, use N/A for full database)')
     parser.add_argument('--sort', type=str, choices=['projects', 'funds'], default='projects',
                       help='Sort categories/subcategories by number of projects or funds raised (default: projects)')
+    parser.add_argument('--no-growth-sort', action='store_true',
+                      help='Sort by absolute numbers instead of growth rate (default: False)')
     return parser.parse_args()
 
 def get_category_metrics(projects: List[Dict[str, Any]], start_time: int, end_time: int, is_subcategory: bool = False) -> List[Dict[str, Any]]:
@@ -68,6 +73,51 @@ def get_category_metrics(projects: List[Dict[str, Any]], start_time: int, end_ti
                 metrics_by_cat[cat]['successful_projects'] += 1
     
     return [{'category': k, **v} for k, v in metrics_by_cat.items()]
+
+def get_funding_ranges():
+    """Define funding goal ranges."""
+    return [
+        (0, 1000, '<$1k'),
+        (1000, 10000, '$1k-$10k'),
+        (10000, 100000, '$10k-$100k'),
+        (100000, 1000000, '$100k-$1m'),
+        (1000000, float('inf'), '>$1m')
+    ]
+
+def analyze_funding_distribution(projects):
+    """Analyze the distribution of projects across funding goal ranges."""
+    ranges = get_funding_ranges()
+    distribution = {label: 0 for _, _, label in ranges}
+    
+    for project in projects:
+        goal = project['goal_usd']
+        for min_val, max_val, label in ranges:
+            if min_val <= goal < max_val:
+                distribution[label] += 1
+                break
+    
+    return distribution
+
+def display_funding_distribution(filtered_projects):
+    """Pass funding goal distribution data to visualization module."""
+    distribution = analyze_funding_distribution(filtered_projects)
+    create_funding_chart(distribution)
+
+def analyze_country_distribution(projects):
+    """Analyze the distribution of projects across countries."""
+    country_counts = {}
+    for p in projects:
+        country = p.get('country', 'Unknown')
+        country_counts[country] = country_counts.get(country, 0) + 1
+    
+    # Sort by count and get top 6
+    sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)[:6]
+    return dict(sorted_countries)
+
+def display_country_distribution(filtered_projects):
+    """Pass country distribution data to visualization module."""
+    distribution = analyze_country_distribution(filtered_projects)
+    create_country_chart(distribution)
 
 def calculate_metrics(projects: List[Dict[str, Any]], start_time: int = None, end_time: int = None, category: str = 'N/A') -> Dict[str, Any]:
     """
@@ -127,13 +177,22 @@ def calculate_metrics(projects: List[Dict[str, Any]], start_time: int = None, en
         is_subcategory = category != 'N/A'
         category_breakdown = get_category_metrics(category_filtered, start_time, end_time, is_subcategory)
     
+    # Get funding distribution
+    funding_dist = analyze_funding_distribution(filtered_projects)
+    create_funding_chart(funding_dist)
+    
+    # Get country distribution
+    country_dist = analyze_country_distribution(filtered_projects)
+    create_country_chart(country_dist)
+    
     return {
         'period': f"{start_date} - {end_date}",
         'total_projects': total_projects,
         'total_funds': total_funds,
         'successful_projects': successful_projects,
         'success_rate': success_rate,
-        'category_breakdown': category_breakdown
+        'category_breakdown': category_breakdown,
+        'filtered_projects': filtered_projects  # Add filtered projects to return value
     }
 
 def calculate_percentage_change(recent: float, previous: float) -> float:
@@ -143,31 +202,50 @@ def calculate_percentage_change(recent: float, previous: float) -> float:
     return ((recent - previous) / previous) * 100
 
 def display_category_breakdown(recent_breakdown: List[Dict[str, Any]], previous_breakdown: List[Dict[str, Any]], 
-                            sort_by: str, is_subcategory: bool = False):
+                            sort_by: str, is_subcategory: bool = False, sort_by_growth: bool = True):
     """Display top 5 categories/subcategories with their metrics and growth."""
     # Create lookup for previous period metrics
     prev_lookup = {item['category']: item for item in previous_breakdown}
     
-    # Sort categories by specified metric
-    sort_key = 'total_funds' if sort_by == 'funds' else 'total_projects'
-    sorted_cats = sorted(recent_breakdown, key=lambda x: x[sort_key], reverse=True)[:5]
+    # Calculate growth rates and create combined metrics
+    combined_metrics = []
+    for cat in recent_breakdown:
+        name = cat['category']
+        prev = prev_lookup.get(name, {'total_projects': 0, 'total_funds': 0, 'successful_projects': 0})
+        sort_key = 'total_funds' if sort_by == 'funds' else 'total_projects'
+        
+        # Calculate growth rate
+        growth = calculate_percentage_change(cat[sort_key], prev[sort_key])
+        
+        combined_metrics.append({
+            **cat,
+            'growth': growth,
+            'success_rate': (cat['successful_projects'] / cat['total_projects'] * 100) if cat['total_projects'] > 0 else 0
+        })
+    
+    # Sort based on growth or absolute numbers
+    if sort_by_growth:
+        sorted_cats = sorted(combined_metrics, key=lambda x: x['growth'], reverse=True)[:5]
+    else:
+        sort_key = 'total_funds' if sort_by == 'funds' else 'total_projects'
+        sorted_cats = sorted(combined_metrics, key=lambda x: x[sort_key], reverse=True)[:5]
     
     cat_type = "Subcategories" if is_subcategory else "Categories"
-    print(f"\nTop 5 {cat_type} by {sort_by}:")
+    metric_type = "funds" if sort_by == "funds" else "projects"
+    sort_type = "growth" if sort_by_growth else "number"
+    print(f"\nTop 5 {cat_type} by {metric_type} {sort_type}:")
     print(f"{'Name':<20} {'Projects':<10} {'Funds ($M)':<12} {'Success Rate':<12} {'Growth %':<10}")
     print("-" * 65)
     
     for cat in sorted_cats:
-        name = cat['category']
-        prev = prev_lookup.get(name, {'total_projects': 0, 'total_funds': 0, 'successful_projects': 0})
-        
-        success_rate = (cat['successful_projects'] / cat['total_projects'] * 100) if cat['total_projects'] > 0 else 0
-        growth = calculate_percentage_change(cat[sort_key], prev[sort_key])
-        
-        print(f"{name[:19]:<20} {cat['total_projects']:<10} {cat['total_funds']/1e6:,.1f}{'M':<8} "
-              f"{success_rate:,.1f}%{'':>6} {growth:+.1f}%")
+        print(f"{cat['category'][:19]:<20} {cat['total_projects']:<10} {cat['total_funds']/1e6:,.1f}{'M':<8} "
+              f"{cat['success_rate']:,.1f}%{'':>6} {cat['growth']:+.1f}%")
+    
+    # Create visualization of category growth
+    sorted_cat_tuples = [(cat['category'], cat) for cat in sorted_cats]
+    create_growth_plot(sorted_cat_tuples, sort_by)
 
-def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '30d', sort_by: str = 'projects') -> None:
+def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '30d', sort_by: str = 'projects', sort_by_growth: bool = True) -> None:
     """
     Analyze projects and display metrics for recent and previous periods.
     
@@ -176,6 +254,7 @@ def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '
         category: Category to analyze (N/A for all categories)
         timeframe: Time period to analyze (N/A for full database)
         sort_by: Sort categories by 'projects' or 'funds'
+        sort_by_growth: Sort by growth rate instead of absolute numbers
     """
     try:
         # Load project data
@@ -194,6 +273,10 @@ def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '
             print(f"Total Funds Raised: ${metrics['total_funds']:,.2f}")
             print(f"Successful Projects: {metrics['successful_projects']:,}")
             print(f"Success Rate: {metrics['success_rate']:.1f}%")
+            
+            # Display funding distribution
+            display_funding_distribution(metrics['filtered_projects'])
+            
         else:
             # Calculate time ranges based on fixed end date
             period_days = TIME_PERIODS[timeframe]
@@ -233,6 +316,9 @@ def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '
             print(f"Successful Projects: {recent_metrics['successful_projects']:,}")
             print(f"Success Rate: {recent_metrics['success_rate']:.1f}%")
             
+            # Display funding distribution for recent period
+            display_funding_distribution(recent_metrics['filtered_projects'])
+            
             print("\nPrevious Period:", previous_metrics['period'])
             print(f"Total Projects: {previous_metrics['total_projects']:,}")
             print(f"Total Funds Raised: ${previous_metrics['total_funds']:,.2f}")
@@ -251,7 +337,8 @@ def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '
                     recent_metrics['category_breakdown'],
                     previous_metrics['category_breakdown'],
                     sort_by,
-                    is_subcategory=(category != 'N/A')
+                    is_subcategory=(category != 'N/A'),
+                    sort_by_growth=sort_by_growth
                 )
         
     except Exception as e:
@@ -259,4 +346,4 @@ def analyze_projects(input_file: Path, category: str = 'N/A', timeframe: str = '
 
 if __name__ == "__main__":
     args = parse_arguments()
-    analyze_projects(args.input, args.category, args.timeframe, args.sort) 
+    analyze_projects(args.input, args.category, args.timeframe, args.sort, not args.no_growth_sort) 

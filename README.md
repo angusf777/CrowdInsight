@@ -81,6 +81,39 @@ Output includes:
      - Success rate
      - Growth percentage compared to previous period
 
+### Backer Analysis (backer_analysis.py)
+
+Analyze backer funding patterns and identify top funded campaigns. This tool provides insights into average funding per backer across categories and highlights the most successful projects.
+
+Usage:
+```bash
+# Default analysis (30-day period, all categories)
+python Tools/backer_analysis.py
+
+# Analyze specific time periods
+python Tools/backer_analysis.py --timeframe 90d
+
+# Analyze specific category
+python Tools/backer_analysis.py --timeframe 30d --category games
+```
+
+Options:
+- `--timeframe`: Time period to analyze (default: 30d)
+  - Available periods: 7d, 30d, 90d, 180d, 1y, 2y, N/A (full database)
+- `--category`: Category to analyze (optional)
+
+Output includes:
+1. Average Funding per Backer:
+   - Breakdown by category
+   - Sorted by average pledge amount
+
+2. Top 5 Funded Projects:
+   - Project name and category
+   - Total amount pledged
+   - Number of backers
+   - Average pledge per backer
+   - Project URL
+
 ## License
 
 MIT License 
