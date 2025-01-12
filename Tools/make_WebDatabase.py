@@ -21,9 +21,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Default file paths
-DEFAULT_INPUT_FILE = Path("/Users/Angusf777/Desktop/FYP CODE/Data/Kickstarter_2024-12-12T03_20_04_455Z.json")
-DEFAULT_OUTPUT_FILE = Path("/Users/Angusf777/Desktop/FYP CODE/Data/website_database.json")
-DEFAULT_STATS_FILE = Path("/Users/Angusf777/Desktop/FYP CODE/Data/web_processing_stats.json")
+DEFAULT_INPUT_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/Kickstarter_2024-12-12T03_20_04_455Z.json")
+DEFAULT_OUTPUT_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/website_database.json")
+DEFAULT_STATS_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/web_processing_stats.json")
 
 # States to exclude from processing
 EXCLUDED_STATES = {'submitted', 'live', 'started'}
@@ -131,6 +131,8 @@ class ProjectFormatter:
                 "pledged_usd": pledged_usd,
                 "backers_count": backers_count,
                 "currency": data.get("currency"),
+                "cal_launched_at": data.get("launched_at"),
+                "cal_deadline": data.get("deadline"),
                 "launched_at": ProjectFormatter.format_date(data.get("launched_at")),
                 "deadline": ProjectFormatter.format_date(data.get("deadline")),
                 "campaign_duration": ProjectFormatter.calculate_duration(

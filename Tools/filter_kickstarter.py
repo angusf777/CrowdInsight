@@ -21,9 +21,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Default paths
-DEFAULT_INPUT_FILE = Path("/Users/Angusf777/Desktop/FYP CODE/Data/Kickstarter_2024-12-12T03_20_04_455Z.json")
-DEFAULT_OUTPUT_FILE = Path("/Users/Angusf777/Desktop/FYP CODE/Data/Kickstarter_filtered.json")
-DEFAULT_STATS_FILE = Path("/Users/Angusf777/Desktop/FYP CODE/Data/filtering_stats.json")
+DEFAULT_INPUT_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/Kickstarter_2024-12-12T03_20_04_455Z.json")
+DEFAULT_OUTPUT_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/Kickstarter_filtered.json")
+DEFAULT_STATS_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/filtering_stats.json")
 
 EXCLUDED_STATES = {'suspended', 'started', 'live', 'submitted'}
 CONVERSION_THRESHOLD = 60  # Percentage threshold for converting canceled to failed
