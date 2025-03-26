@@ -1,6 +1,6 @@
 # Data files
-Data/*.json
-Data/*.json.gz
+Data/
+RawData/
 
 # Python
 __pycache__/

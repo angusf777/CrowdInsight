@@ -142,6 +142,7 @@ class ProjectFormatter:
                 "percent_funded": data.get("percent_funded", 0),
                 "pledge_per_backer": pledge_per_backer,
                 "is_staff_pick": data.get("staff_pick", False),
+                "creator_id": data.get('creator', {}).get('id'),
                 "links": {
                     "project": data.get("urls", {}).get("web", {}).get("project"),
                     "creator": data.get("creator", {}).get("urls", {}).get("web", {}).get("user")
