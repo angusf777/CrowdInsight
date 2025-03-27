@@ -56,7 +56,7 @@ def parse_date(date_str):
 def main():
     # Load data
     website_data = load_json("Data/website_database.json")
-    project_data = load_json("RawData/project_descriptions_15000.json")
+    project_data = load_json("RawData/project_descriptions_20000.json")
     
     if website_data is None or project_data is None:
         return
@@ -92,6 +92,7 @@ def main():
             "previous_projects": len(past_projects),
             "previous_successful_projects": len(past_success),
             "previous_failed_projects": len(past_failed),
+            "have_previous_project": 1 if past_projects else 0,
             "average_funding_goal": avg_funding_goal,
             "average_pledged": avg_pledged,
             "state": 1 if project.get("state") == "successful" else 0,
