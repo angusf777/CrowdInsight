@@ -10,7 +10,7 @@ from pymongo import MongoClient
 import gensim.downloader
 from gensim.models import KeyedVectors
 from gensim.parsing.preprocessing import preprocess_string
-#import time
+import time
 
 class CampaignProcessor:
     def __init__(self, data):
@@ -344,10 +344,6 @@ class CampaignProcessor:
         except Exception as e:
             print(f"Error calculating previous success rate")
             return 0.0
-
-
-    def process_state(self, campaign: Dict):
-        return campaign.get('state') == 'successful'
     
 
     def process_campaign(self, campaign: Dict, idx: int):
@@ -372,14 +368,14 @@ class CampaignProcessor:
             'previous_success_rate': self.calculate_previous_sucess_rate(campaign, idx),
             'previous_pledged': self.process_previous_pledged(campaign, idx),
             'previous_funding_goal': self.process_previous_funding_goal(campaign, idx),
-            'state': self.process_state(campaign)
+            'state': campaign['state'] if 'state' in campaign else 0
         }
 
 def main():
-    #start_time = time.time()
+    start_time = time.time()
     
     # Load campaign data
-    file_path = r"C:\Users\qjona\OneDrive\Desktop\Year 4 Sem 2\FYP Sem 2\Project Code\pre_inputdata.json"
+    file_path = r"C:\Users\qjona\OneDrive\Desktop\Year 4 Sem 2\FYP Sem 2\Project Code\first_20_campaigns.json"
     with open(file_path, 'r', encoding='utf-8') as file:
         campaigns_dict = json.load(file)
 
@@ -427,7 +423,7 @@ def main():
     #print(f"state: {processed_campaigns[0]['state']}")
     #-------------------------------------------------------------------------------------------------
 
-    output_file_path = "allProcessed.json"
+    output_file_path = "20Processed.json"
     try:
         with open(output_file_path, 'w', encoding='utf-8') as f:
             json.dump(processed_campaigns, f, indent=2)
@@ -436,10 +432,12 @@ def main():
         print(f"Error saving to file: {str(e)}")
 
 
-    #end_time = time.time()
-    #execution_time = end_time - start_time
-    #print(f"Total execution time: {execution_time:.2f} seconds")
-    #print(f"Average time per campaign: {execution_time/len(processed_campaigns):.2f} seconds")
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print(f"Total execution time: {execution_time:.2f} seconds")
+    print(f"Average time per campaign: {execution_time/len(processed_campaigns):.2f} seconds")
 
 if __name__ == "__main__":
     main()
+
+    
