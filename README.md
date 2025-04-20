@@ -10,6 +10,7 @@ CrowdInsight is a comprehensive data analysis project focused on predicting Kick
 
 **Related Projects:**
 - 🤖 [CrowdInsight-Model](https://github.com/angusf777/CrowdInsight-Model) - ML models for campaign success prediction
+- 🗃️ [Kickstarter-Scraper](https://github.com/lkh2/Kickstarter-Scraper) - Scraper for detailed campaign descriptions and content
 
 ## Data Sources
 
