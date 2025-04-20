@@ -1,9 +1,25 @@
 """
-Filter and process Kickstarter project data based on specific criteria.
+Kickstarter Project Filter and Processor
 
 This module processes raw Kickstarter data, filtering and transforming projects
-based on their state and other attributes. It handles canceled projects specially,
-converting them to failed status if they meet certain criteria.
+based on their state and attributes. It implements a specialized handling approach
+for canceled projects, converting them to failed status if they meet specific criteria.
+
+Key features:
+- Filters out projects with excluded states (suspended, started, live, submitted)
+- Handles canceled projects by:
+  - Converting to "failed" if ≤60% campaign time was remaining at cancellation
+  - Excluding if >60% campaign time was remaining at cancellation
+- Preserves successful and failed projects unchanged
+- Generates detailed statistics on the filtering process
+
+Usage:
+    python Tools/filter_kickstarter.py [--input INPUT_FILE] [--output OUTPUT_FILE] [--stats STATS_FILE]
+
+The script outputs both the filtered data and comprehensive statistics about the
+filtering process, which are used by visualization tools to explain the methodology.
+
+Copyright (c) 2025 Angus Fung
 """
 
 import json
@@ -29,7 +45,12 @@ EXCLUDED_STATES = {'suspended', 'started', 'live', 'submitted'}
 CONVERSION_THRESHOLD = 60  # Percentage threshold for converting canceled to failed
 
 def parse_arguments():
-    """Parse command line arguments."""
+    """
+    Parse command line arguments for the filter_kickstarter script.
+    
+    Returns:
+        argparse.Namespace: Object containing the parsed command line arguments
+    """
     parser = argparse.ArgumentParser(description='Filter and process Kickstarter project data.')
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT_FILE,
                       help='Path to input JSON file')
@@ -40,7 +61,14 @@ def parse_arguments():
     return parser.parse_args()
 
 class ProjectProcessor:
-    """Handles the processing and filtering of Kickstarter projects."""
+    """
+    Handles the processing and filtering of Kickstarter projects.
+    
+    This class contains methods to evaluate projects based on their state
+    and determine whether they should be included in the filtered dataset.
+    It provides special handling for canceled projects, calculating the
+    percentage of remaining campaign time at cancellation.
+    """
     
     @staticmethod
     def calculate_remaining_time_percentage(deadline: int, canceled_at: int, created_at: int) -> float:
@@ -53,7 +81,11 @@ class ProjectProcessor:
             created_at: Project creation timestamp
             
         Returns:
-            float: Percentage of time remaining
+            float: Percentage of time remaining (0-100)
+            
+        Note:
+            The calculation uses the formula:
+            (time_until_deadline / total_duration) * 100
         """
         try:
             deadline_dt = datetime.fromtimestamp(deadline)
@@ -76,14 +108,21 @@ class ProjectProcessor:
         """
         Determine if a project should be included in the filtered dataset.
         
+        The decision follows these rules:
+        1. Exclude projects with states in EXCLUDED_STATES
+        2. Include successful and failed projects as-is
+        3. For canceled projects:
+           - Convert to failed if ≤60% of campaign time remained at cancellation
+           - Exclude if >60% of campaign time remained at cancellation
+        
         Args:
             project: Project data dictionary
             
         Returns:
             Tuple containing:
             - bool: Whether to include the project
-            - Optional[Dict]: Modified project data if included
-            - str: Reason for the decision
+            - Optional[Dict]: Modified project data if included, None if excluded
+            - str: Reason for the decision (for statistics)
         """
         try:
             state = project.get('data', {}).get('state', '').lower()
@@ -120,10 +159,13 @@ class ProjectProcessor:
 def filter_projects(input_file: Path, output_file: Path, stats_file: Path) -> None:
     """
     Main function to filter and process Kickstarter projects.
-    Reads from input file, processes projects, and saves filtered results.
+    
+    Reads projects from the input file, processes each one according to
+    filtering rules, and saves the filtered results to the output file.
+    Also collects and saves comprehensive statistics about the filtering process.
     
     Args:
-        input_file: Path to input JSON file
+        input_file: Path to input JSON file containing raw Kickstarter data
         output_file: Path to output filtered JSON file
         stats_file: Path to output statistics JSON file
     """

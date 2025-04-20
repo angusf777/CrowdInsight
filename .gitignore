@@ -1,6 +1,7 @@
 # Data files
 Data/
 RawData/
+Graphs/
 
 # Python
 __pycache__/

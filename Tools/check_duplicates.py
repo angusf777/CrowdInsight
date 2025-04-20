@@ -1,8 +1,23 @@
 """
-Check for duplicate projects in the Kickstarter dataset and remove duplicates.
+Kickstarter Duplicate Project Detector and Remover
 
-This module analyzes the Kickstarter data to identify and remove duplicate projects,
-saving both the deduplicated dataset and statistics about the duplicates found.
+This module identifies and removes duplicate projects from raw Kickstarter data.
+It implements a multi-layered approach to detect duplicates using various identifiers
+such as project IDs, names, URLs, and creator information.
+
+Key features:
+- Efficient line-by-line processing of large JSON files
+- Multi-key duplicate detection (ID, name, URL, creator)
+- Comprehensive statistics collection about duplicates
+- Detailed reporting on duplicate groups
+
+The module saves both a deduplicated dataset and statistics about the
+duplicates found, which can be used for data quality assessment and reporting.
+
+Usage:
+    python Tools/check_duplicates.py [--input INPUT_FILE] [--output OUTPUT_FILE] [--stats STATS_FILE]
+
+Copyright (c) 2025 Angus Fung
 """
 
 import json
@@ -26,7 +41,12 @@ DEFAULT_OUTPUT_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/Kickstart
 DEFAULT_STATS_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/duplicate_stats.json")
 
 def parse_arguments():
-    """Parse command line arguments."""
+    """
+    Parse command line arguments for the check_duplicates script.
+    
+    Returns:
+        argparse.Namespace: Object containing the parsed command line arguments
+    """
     parser = argparse.ArgumentParser(description='Remove duplicate projects from Kickstarter data.')
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT_FILE,
                       help='Path to input JSON file')
@@ -37,7 +57,21 @@ def parse_arguments():
     return parser.parse_args()
 
 class DuplicateProcessor:
-    """Handles the processing and removal of duplicate projects in Kickstarter data."""
+    """
+    Handles the processing and removal of duplicate projects in Kickstarter data.
+    
+    This class maintains multiple tracking maps to identify duplicates based on
+    different attributes (ID, name, URL, creator) and collects detailed statistics
+    about the duplicates found.
+    
+    Attributes:
+        id_map: Dictionary mapping project IDs to lists of project data
+        name_map: Dictionary mapping project names to lists of project data
+        url_map: Dictionary mapping project URLs to lists of project data  
+        creator_map: Dictionary mapping creator IDs to lists of project data
+        seen_ids: Set of project IDs already processed
+        duplicate_stats: Dictionary containing statistics about duplicates
+    """
     
     def __init__(self):
         self.id_map: Dict[str, List[Dict]] = defaultdict(list)
@@ -57,7 +91,15 @@ class DuplicateProcessor:
     def process_project(self, project: Dict) -> bool:
         """
         Process a project and determine if it's a duplicate.
-        Returns True if project should be kept, False if it's a duplicate.
+        
+        This method examines each project and determines if it should be kept
+        or discarded based on whether its ID has been seen before.
+        
+        Args:
+            project: Project data dictionary
+            
+        Returns:
+            bool: True if project should be kept, False if it's a duplicate
         """
         project_id = project.get('data', {}).get('id')
         if not project_id:
@@ -72,7 +114,16 @@ class DuplicateProcessor:
         return True
     
     def _update_maps(self, project: Dict) -> None:
-        """Update tracking maps with project information."""
+        """
+        Update tracking maps with project information.
+        
+        This method adds the project to various tracking maps based on
+        its ID, name, URL, and creator information to facilitate
+        duplicate detection and statistics collection.
+        
+        Args:
+            project: Project data dictionary
+        """
         data = project.get('data', {})
         project_id = data.get('id')
         project_name = data.get('name', '').lower()
@@ -92,7 +143,18 @@ class DuplicateProcessor:
             self.duplicate_stats['by_state'][state] += 1
     
     def _extract_project_info(self, project: Dict) -> Dict:
-        """Extract relevant project information for reporting."""
+        """
+        Extract relevant project information for reporting.
+        
+        This method extracts key attributes from a project for inclusion
+        in the duplicate statistics report.
+        
+        Args:
+            project: Project data dictionary
+            
+        Returns:
+            Dict: Dictionary containing key project attributes
+        """
         data = project.get('data', {})
         return {
             'id': data.get('id'),
@@ -105,7 +167,15 @@ class DuplicateProcessor:
         }
     
     def finalize_stats(self) -> Dict:
-        """Finalize and return statistics about duplicates."""
+        """
+        Finalize and return statistics about duplicates.
+        
+        This method processes duplicate groups, calculates summary statistics,
+        and prepares the final statistics report.
+        
+        Returns:
+            Dict: Dictionary containing comprehensive statistics about duplicates
+        """
         # Process duplicate groups
         for project_id, projects in self.id_map.items():
             if len(projects) > 1:
@@ -130,8 +200,12 @@ def remove_duplicates(input_file: Path, output_file: Path, stats_file: Path) -> 
     """
     Main function to remove duplicates from Kickstarter data and save statistics.
     
+    This function processes the input file line by line, identifying and removing
+    duplicate projects, and saves both the deduplicated data and statistics about
+    the duplicates found.
+    
     Args:
-        input_file: Path to input JSON file
+        input_file: Path to input JSON file containing raw Kickstarter data
         output_file: Path to output deduplicated JSON file
         stats_file: Path to output statistics JSON file
     """

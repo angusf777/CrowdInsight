@@ -1,8 +1,28 @@
 """
-Create line plots for Kickstarter category growth analysis.
+Kickstarter Category Growth Visualization
 
-This module creates visualizations for temporal analysis of Kickstarter projects,
-focusing on growth rates across categories.
+This module creates line plots visualizing the growth trends of Kickstarter 
+categories or subcategories. It generates clean, minimalist charts that 
+highlight relative growth rates with annotations showing exact percentage changes.
+
+The visualizations are designed to be embedded in web dashboards or reports
+and provide insights into which categories are trending upward or downward
+in terms of project counts or funding amounts.
+
+Features:
+- Minimalist design with clean typography
+- Clear growth rate indicators with value annotations
+- Adjustable dimensions to fit various display contexts
+- Automatic file handling and directory creation
+
+Usage:
+    This module is typically imported and used by analysis scripts
+    rather than run directly:
+    
+    from Tools.plot import trending_cat
+    trending_cat.create_growth_plot(categories_data, sort_by="projects")
+
+Copyright (c) 2025 Angus Fung
 """
 
 import matplotlib.pyplot as plt
@@ -10,14 +30,25 @@ import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
 
-def plot_category_growth(categories: List[str], growth_rates: List[float], title: str = ""):
+def plot_category_growth(categories: List[str], growth_rates: List[float], title: str = "") -> plt.Figure:
     """
     Create a line plot of category growth rates with point labels.
     
+    This function generates a minimalist line visualization showing growth rates
+    for categories, with each data point annotated with the exact percentage value.
+    The design emphasizes readability and clean aesthetics for dashboard integration.
+    
     Args:
-        categories: List of category names
-        growth_rates: List of growth rates
-        title: Plot title (default empty)
+        categories: List of category names to display
+        growth_rates: List of growth rate percentages corresponding to categories
+        title: Optional plot title (default empty)
+        
+    Returns:
+        plt.Figure: Matplotlib figure object containing the visualization
+        
+    Note:
+        The function uses a fixed size ratio optimized for dashboard embedding,
+        with specific styling choices for readability.
     """
     # Create figure and axis with specific dimensions (280x952 pixels)
     dpi = 100
@@ -75,8 +106,21 @@ def plot_category_growth(categories: List[str], growth_rates: List[float], title
     
     return fig
 
-def save_plot(fig, output_path: str = "Graphs/category_growth.png"):
-    """Save the plot to a file."""
+def save_plot(fig: plt.Figure, output_path: str = "Graphs/category_growth.png") -> None:
+    """
+    Save the plot to a file with appropriate settings.
+    
+    This function handles directory creation and saves the figure with
+    settings optimized for web display, preserving transparency and
+    background colors.
+    
+    Args:
+        fig: Matplotlib figure object to save
+        output_path: Path where the figure should be saved (default: Graphs/category_growth.png)
+        
+    Note:
+        Creates the output directory if it doesn't exist
+    """
     # Ensure the Graphs directory exists
     output_dir = Path("Graphs")
     output_dir.mkdir(exist_ok=True)
@@ -86,13 +130,23 @@ def save_plot(fig, output_path: str = "Graphs/category_growth.png"):
                 facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close(fig)  # Close the figure to free memory
 
-def create_growth_plot(sorted_categories: List[Tuple[str, Dict[str, Any]]], sort_by: str = 'projects'):
+def create_growth_plot(sorted_categories: List[Tuple[str, Dict[str, Any]]], sort_by: str = 'projects') -> None:
     """
     Create and save a growth rate plot from category metrics.
     
+    This function extracts growth rate data from category metrics and
+    generates a visualization highlighting the growth trends. It's designed 
+    to be called from analysis scripts that have already calculated metrics
+    and growth rates.
+    
     Args:
         sorted_categories: List of tuples containing (category_name, metrics_dict)
-        sort_by: Metric used for sorting ('projects' or 'funds')
+                          where metrics_dict must contain a 'growth' key
+        sort_by: Metric used for sorting, either 'projects' or 'funds'
+                (affects display only, not the sorting of the input data)
+    
+    Note:
+        The function automatically selects the top 5 categories from the input list
     """
     # Extract categories and growth rates
     categories = []

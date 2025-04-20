@@ -1,8 +1,26 @@
 """
-Generate a web-friendly database from Kickstarter project data.
+Web-Friendly Kickstarter Database Generator
 
-This module processes Kickstarter project data and creates a cleaned,
-web-friendly database with relevant project information and statistics.
+This module processes filtered Kickstarter project data and creates a standardized,
+web-friendly database suitable for analysis and visualization. It transforms raw
+project data into a clean, consistent format with normalized fields and calculated
+metrics.
+
+Key features:
+- Standardizes dates and timestamps
+- Normalizes currency values to USD
+- Calculates derived metrics (campaign duration, pledge per backer)
+- Extracts key project attributes into a flat structure
+- Excludes projects with undesirable states (live, started, submitted)
+- Maintains comprehensive statistics about the processed data
+
+The resulting database is optimized for web applications, data analysis,
+and machine learning tasks that require clean, standardized data.
+
+Usage:
+    python Tools/make_WebDatabase.py [--input INPUT_FILE] [--output OUTPUT_FILE] [--stats STATS_FILE]
+
+Copyright (c) 2025 Angus Fung
 """
 
 import json
@@ -29,7 +47,12 @@ DEFAULT_STATS_FILE = Path("/Users/Angusf777/Desktop/FYP OFFICIAL/Data/web_proces
 EXCLUDED_STATES = {'submitted', 'live', 'started'}
 
 def parse_arguments():
-    """Parse command line arguments."""
+    """
+    Parse command line arguments for the web database generator.
+    
+    Returns:
+        argparse.Namespace: Object containing the parsed command line arguments
+    """
     parser = argparse.ArgumentParser(description='Generate web-friendly database from Kickstarter data.')
     parser.add_argument('--input', type=Path, default=DEFAULT_INPUT_FILE,
                       help='Path to input JSON file')
@@ -40,7 +63,14 @@ def parse_arguments():
     return parser.parse_args()
 
 class ProjectFormatter:
-    """Handles the formatting and processing of individual project records."""
+    """
+    Handles the formatting and processing of individual project records.
+    
+    This class contains methods for transforming raw project data into a
+    standardized format suitable for web applications and analysis. It
+    handles date formatting, duration calculations, and extraction of
+    key project attributes.
+    """
     
     @staticmethod
     def format_date(timestamp: int) -> str:
@@ -51,7 +81,10 @@ class ProjectFormatter:
             timestamp: Unix timestamp to convert
             
         Returns:
-            str: Formatted date string
+            str: Formatted date string or empty string if conversion fails
+            
+        Raises:
+            TypeError, ValueError: If timestamp is invalid, handled internally
         """
         try:
             return datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y')
@@ -69,7 +102,10 @@ class ProjectFormatter:
             deadline: Campaign deadline timestamp
             
         Returns:
-            int: Duration in days
+            int: Duration in days or 0 if calculation fails
+            
+        Raises:
+            TypeError, ValueError: If timestamps are invalid, handled internally
         """
         try:
             return (datetime.fromtimestamp(deadline) - datetime.fromtimestamp(launched)).days
@@ -80,14 +116,25 @@ class ProjectFormatter:
     @staticmethod
     def process_project(data: Dict[str, Any], stats: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Process a single project record.
+        Process a single project record into web-friendly format.
+        
+        This method transforms raw project data by:
+        - Checking if the project state is excluded
+        - Calculating USD values for monetary fields
+        - Computing derived metrics (pledge per backer, duration)
+        - Extracting category and location information
+        - Formatting dates and timestamps
+        - Creating a flat structure with normalized fields
         
         Args:
             data: Raw project data dictionary
-            stats: Statistics dictionary to update
+            stats: Statistics dictionary to update during processing
             
         Returns:
-            Dict[str, Any]: Processed project data
+            Dict[str, Any]: Processed project data or empty dict if excluded
+            
+        Raises:
+            Various exceptions may be caught internally and logged
         """
         try:
             # Check if project state is in excluded states
@@ -156,12 +203,23 @@ class ProjectFormatter:
 def process_database(input_file: Path, output_file: Path, stats_file: Path) -> None:
     """
     Main function to process Kickstarter data and create web database.
-    Reads from input file, processes projects, and saves to output file.
+    
+    This function orchestrates the entire process:
+    1. Reads the input file line by line
+    2. Processes each project using ProjectFormatter
+    3. Collects comprehensive statistics about the processing
+    4. Saves the processed records to the output file
+    5. Saves statistics to the stats file
+    6. Logs summary information
     
     Args:
-        input_file: Path to input JSON file
+        input_file: Path to input JSON file containing filtered Kickstarter data
         output_file: Path to output web database JSON file
         stats_file: Path to output statistics JSON file
+        
+    Raises:
+        Various exceptions may be caught and logged, with processing continuing
+        where possible
     """
     processed_records: List[Dict[str, Any]] = []
     stats = {

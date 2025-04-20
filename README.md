@@ -1,118 +1,155 @@
-# CrowdInsight
+# CrowdInsight: Kickstarter Campaign Success Predictor (Data Preprocessing)
 
-A data analysis project focused on Kickstarter campaigns, providing insights into crowdfunding success factors and trends.
+![Kickstarter Analytics](https://img.shields.io/badge/Kickstarter-Analytics-brightgreen)
+![Data Science](https://img.shields.io/badge/Data-Science-blue)
+![NLP](https://img.shields.io/badge/NLP-Embeddings-orange)
+
+## Overview
+
+CrowdInsight is a comprehensive data analysis project focused on predicting Kickstarter campaign success with explainable AI techniques. This repository contains the data preprocessing pipeline that transforms raw Kickstarter data into structured features suitable for machine learning models.
+
+**Related Projects:**
+- 🤖 [CrowdInsight-Model](https://github.com/angusf777/CrowdInsight-Model) - ML models for campaign success prediction
+
+## Data Sources
+
+This preprocessing pipeline works with data from two primary sources:
+
+1. **[Webrobots.io](https://webrobots.io/kickstarter-datasets/)** - Structured Kickstarter metadata scraped periodically
+2. **Campaign Content Data** - Detailed campaign descriptions, risks, and media scraped using methods from [lkh2/Kickstarter-Scraper](https://github.com/lkh2/Kickstarter-Scraper)
+
+## Preprocessing Pipeline
+
+The repository implements a multi-stage pipeline that transforms raw data into model-ready features:
+
+### 1. Data Cleaning & Filtering (`Tools/`)
+- **check_duplicates.py** - Removes duplicate campaign entries
+- **filter_kickstarter.py** - Filters campaigns based on state and applies special handling for canceled projects
+- **make_WebDatabase.py** - Creates a normalized web-friendly database with standardized fields
+
+### 2. Feature Generation (`Processor.py`)
+The core processor transforms campaign data into ML-ready features using advanced NLP techniques:
+
+#### Text Processing
+- Campaign descriptions → Longformer embeddings (768-dimensional vectors)
+- Risk statements and blurbs → MiniLM embeddings (384-dimensional vectors)
+- Categories/subcategories → GloVe embeddings (100-dimensional vectors)
+- Country information → GloVe embeddings (100-dimensional vectors)
+
+#### Numerical Features
+- Funding goals (log-transformed)
+- Campaign duration
+- Image and video counts
+- Previous campaign metrics
+- Success rate indicators
+
+### 3. Analysis Tools
+- **row1+2_analysis.py** - Temporal and categorical analysis of projects
+- **backer_analysis.py** - Analyzes backer funding patterns
+- **Plot visualizations** - Distribution charts for funding goals, countries, and backer metrics
+
+## Setup and Usage
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/angusf777/CrowdInsight.git
+   cd CrowdInsight
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the setup notebook:**
+   ```bash
+   jupyter notebook setup.ipynb
+   ```
+   This notebook guides you through the entire preprocessing pipeline from raw data to model-ready features.
+
+4. **Run specific analysis tools:**
+   ```bash
+   # Analyze projects from the last 30 days
+   python Tools/row1+2_analysis.py --timeframe 30d
+   
+   # Analyze technology category projects
+   python Tools/row1+2_analysis.py --category technology
+   
+   # Analyze backer patterns
+   python Tools/backer_analysis.py
+   ```
+
+## Embedding Models
+
+Our pipeline uses state-of-the-art NLP models to capture semantic meaning from campaign text:
+
+### Longformer
+Used for processing long campaign descriptions (up to 4096 tokens)
+```
+@article{Beltagy2020Longformer,
+  title={Longformer: The Long-Document Transformer},
+  author={Iz Beltagy and Matthew E. Peters and Arman Cohan},
+  journal={arXiv:2004.05150},
+  year={2020},
+}
+```
+
+### MiniLM (Sentence-Transformers)
+Used for processing shorter texts like risks and blurbs
+```
+@article{wang2020minilm,
+  title   = {MiniLM: Deep Self-Attention Distillation for Task-Agnostic Compression of Pre-Trained Transformers},
+  author  = {Wenhui Wang and Furu Wei and Li Dong and Hangbo Bao and Nan Yang and Ming Zhou},
+  journal = {arXiv preprint arXiv:2002.10957},
+  year    = {2020},
+}
+
+@inproceedings{reimers2019sentencebert,
+  title     = {Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks},
+  author    = {Nils Reimers and Iryna Gurevych},
+  booktitle = {Proceedings of the 2019 Conference on Empirical Methods in Natural Language Processing},
+  pages     = {3980--3990},
+  year      = {2019},
+}
+```
+
+### GloVe
+Used for embedding categorical data like countries and subcategories
+```
+@inproceedings{pennington2014glove,
+  title     = {GloVe: Global Vectors for Word Representation},
+  author    = {Jeffrey Pennington and Richard Socher and Christopher D. Manning},
+  booktitle = {Proceedings of the 2014 Conference on Empirical Methods in Natural Language Processing},
+  pages     = {1532--1543},
+  year      = {2014},
+  doi       = {10.3115/v1/D14-1162}
+}
+```
 
 ## Project Structure
 
-- `Data/`: Contains processed Kickstarter data files
-- `Tools/`: Python scripts for data processing and analysis
-  - `filter_kickstarter.py`: Filters and processes raw Kickstarter data
-  - `make_WebDatabase.py`: Generates web-friendly database from processed data
-  - `row1+2_analysis.py`: Performs temporal and categorical analysis of Kickstarter projects
-
-## Setup
-
-1. Clone the repository:
-```bash
-git clone https://github.com/angusf777/CrowdInsight.git
-cd CrowdInsight
+```
+CrowdInsight/
+├── Data/                   # Processed data files
+├── Tools/                  # Analysis and data processing scripts
+│   ├── check_duplicates.py # Remove duplicate entries
+│   ├── filter_kickstarter.py # Filter campaigns by state
+│   ├── make_WebDatabase.py # Create web-friendly database
+│   ├── row1+2_analysis.py  # Temporal/categorical analysis
+│   ├── backer_analysis.py  # Backer funding patterns
+│   └── plot/               # Visualization modules
+├── Processor.py            # Main feature extraction pipeline
+├── plot_canceled_distribution.py # Visualize canceled projects
+├── setup.ipynb             # End-to-end preprocessing workflow
+└── requirements.txt        # Project dependencies
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Authors
 
-3. Run the setup notebook:
-```bash
-jupyter notebook setup.ipynb
-```
+- **Fung Angus**
+- **Qian Yongkun Jonathan**
 
-## Data Processing Pipeline
-
-1. The setup notebook downloads and extracts the latest Kickstarter dataset
-2. `filter_kickstarter.py` processes and filters the raw data
-3. `make_WebDatabase.py` creates a web-friendly database for analysis
-
-## Analysis Tools
-
-### Temporal and Categorical Analysis (row1+2_analysis.py)
-
-Analyze Kickstarter projects over different time periods with detailed category/subcategory breakdowns. The script provides comprehensive metrics including total projects, funds raised, success rates, and their changes over time.
-
-Usage:
-```bash
-# Default analysis (30-day period, all categories, sorted by number of projects)
-python Tools/row1+2_analysis.py
-
-# Analyze specific time periods (7d, 30d, 90d, 180d, 1y, 2y, or N/A for full database)
-python Tools/row1+2_analysis.py --timeframe 180d
-
-# Analyze specific category with subcategory breakdown
-python Tools/row1+2_analysis.py --timeframe 90d --category technology
-
-# Sort by funds raised instead of project count
-python Tools/row1+2_analysis.py --sort funds
-
-# Analyze entire database
-python Tools/row1+2_analysis.py --timeframe N/A
-```
-
-Options:
-- `--timeframe`: Time period to analyze (default: 30d)
-  - Available periods: 7d, 30d, 90d, 180d, 1y, 2y, N/A (full database)
-- `--category`: Category to analyze (default: N/A for all categories)
-- `--sort`: Sort categories/subcategories by 'projects' or 'funds' (default: projects)
-- `--input`: Custom input file path (default: Data/website_database.json)
-
-Output includes:
-1. Period Overview:
-   - Total number of projects
-   - Total funds raised
-   - Number of successful projects
-   - Success rate
-   - Percentage changes between periods (except for full database analysis)
-
-2. Category/Subcategory Analysis:
-   - Top 5 categories (or subcategories if category specified)
-   - For each category/subcategory:
-     - Number of projects
-     - Funds raised (in millions)
-     - Success rate
-     - Growth percentage compared to previous period
-
-### Backer Analysis (backer_analysis.py)
-
-Analyze backer funding patterns and identify top funded campaigns. This tool provides insights into average funding per backer across categories and highlights the most successful projects.
-
-Usage:
-```bash
-# Default analysis (30-day period, all categories)
-python Tools/backer_analysis.py
-
-# Analyze specific time periods
-python Tools/backer_analysis.py --timeframe 90d
-
-# Analyze specific category
-python Tools/backer_analysis.py --timeframe 30d --category games
-```
-
-Options:
-- `--timeframe`: Time period to analyze (default: 30d)
-  - Available periods: 7d, 30d, 90d, 180d, 1y, 2y, N/A (full database)
-- `--category`: Category to analyze (optional)
-
-Output includes:
-1. Average Funding per Backer:
-   - Breakdown by category
-   - Sorted by average pledge amount
-
-2. Top 5 Funded Projects:
-   - Project name and category
-   - Total amount pledged
-   - Number of backers
-   - Average pledge per backer
-   - Project URL
+*April 2025*
 
 ## License
 
